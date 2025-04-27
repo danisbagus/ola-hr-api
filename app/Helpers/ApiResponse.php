@@ -24,7 +24,7 @@ class ApiResponse
         ], status: $statusCode);
     }
 
-    public static function badRequest($errors = null, $message = 'Bad Request')
+    public static function badRequest($message = 'Bad Request', $errors = null)
     {
         return response()->json([
             'code' => 'BAD_REQUEST',
@@ -58,7 +58,7 @@ class ApiResponse
         ], status: self::HTTP_UNAUTHORIZED);
     }
 
-    public static function notFound($message = 'Unauthorized')
+    public static function notFound($message = 'Not Found')
     {
         return response()->json([
             'code' => 'NOT_FOUND',
