@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Helpers\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
@@ -18,24 +21,44 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:14',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
+            'division_id' => 'required|exists:divisions,id',
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::unauthorized("Invalid request", $validator->errors()->first());
+            return ApiResponse::badRequest($validator->errors()->first());
         }
 
-        $user = User::create([
-            'name' => $request->get('name'),
-            'email' => $request->get('email'),
-            'password' => Hash::make($request->get('password')),
-        ]);
+        DB::beginTransaction();
 
-        $token = JWTAuth::fromUser($user);
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone_number' => $request->phone_number,
+                'division_id' => $request->division_id,
+                'role_id' => $request->role_id,
+                'is_active' => true,
+            ]);
 
-        $response = ['token' => $token, 'user' => $user];
-        return ApiResponse::success($response, "Successfully registered", ApiResponse::HTTP_CREATED);
+            $token = JWTAuth::fromUser($user);
+
+            DB::commit();
+
+            return ApiResponse::success(
+                ['token' => $token, 'user' => $user],
+                "Successfully registered",
+                Response::HTTP_CREATED
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Registration failed: " . $e->getMessage());
+            return ApiResponse::internalServerError($e, 'Registration failed');
+        }
     }
 
     // Login user
@@ -52,6 +75,7 @@ class AuthController extends Controller
             $response = ['token' => $token];
             return ApiResponse::success($response, 'Successfully login');
         } catch (JWTException $e) {
+            Log::error('Failed to login: ' . $e->getMessage());
             return ApiResponse::internalServerError($e->getMessage(), 'Failed to login');
         }
     }
@@ -67,6 +91,7 @@ class AuthController extends Controller
             $response = ['user' => $user];
             return ApiResponse::success($response, 'Successfully get authenticated user');
         } catch (JWTException $e) {
+            Log::error('Failed to get authenticated user: ' . $e->getMessage());
             return ApiResponse::internalServerError($e->getMessage(), 'Failed to get authenticated user');
         }
     }
