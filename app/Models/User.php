@@ -22,6 +22,10 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'phone_number',
+        'division_id',
+        'role_id',
+        'is_active',
     ];
 
     /**
@@ -44,6 +48,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -63,5 +68,15 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
     }
 }
