@@ -40,7 +40,7 @@ class ApiResponse
         return response()->json([
             'code' => 'INTERNAL_SERVER_ERROR',
             'message' => $message,
-            'errors' => $errors,
+            'errors' => $errors->getMessage(),
             'server_time' => now()->timestamp,
             'data' => null,
         ], status: self::HTTP_INTERNAL_ERROR);
