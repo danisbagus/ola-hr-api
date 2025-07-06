@@ -16,11 +16,8 @@ class UserSeeders extends Seeder
         DB::table('users')->insert([
             [
                 'id' => 1,
-                'name' => 'Danis Bagus',
                 'email' => 'danis@live.com',
                 'password' => '$2y$12$an8lY/AaQGX75YTEp9XMF.wNPT7RWLxPkgH6nwmi6mKAB4gd5c4UC',
-                'phone_number' => '08123456789',
-                'division_id' => 1,
                 'role_id' => 1,
                 'is_active' => true,
                 'created_at' => now(),
