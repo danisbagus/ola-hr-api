@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Employee;
+use Illuminate\Validation\Rule;
+
 class UpdateEmployeeRequest extends BaseFormRequest
 {
     /**
@@ -28,6 +31,25 @@ class UpdateEmployeeRequest extends BaseFormRequest
             'role_id' => 'required|exists:roles,id',
             'address' => 'nullable|string',
             'is_active' => 'required|boolean',
+            'hire_date' => 'nullable|date',
+            'birth_date' => 'nullable|date',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $employee = Employee::find($this->route('id'));
+
+        if ($employee && $employee->user_id) {
+            $validator->sometimes('email', [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($employee->user_id),
+            ], function () {
+                return true;
+            });
+        }
     }
 }

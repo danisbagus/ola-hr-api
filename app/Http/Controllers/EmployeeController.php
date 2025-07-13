@@ -190,6 +190,9 @@ class EmployeeController extends Controller
             'employment_status' => $request->employment_status,
             'gender' => $request->gender,
             'division_id' => $request->division_id,
+            'role_id' => $request->role_id,
+            'hire_date' => $request->hire_date,
+            'birth_date' => $request->birth_date,
             'address' => $request->address,
             'is_active' => $request->is_active,
         ];
@@ -199,6 +202,7 @@ class EmployeeController extends Controller
     {
         return [
             'role_id' => $request->role_id,
+            'email' => $request->email,
             'is_active' => $request->is_active,
         ];
     }
