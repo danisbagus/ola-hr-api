@@ -46,5 +46,6 @@ Route::middleware([JwtMiddleware::class])->group(function () {
         Route::post('/', [EmployeeController::class, 'store']);
         Route::put('/{id}', [EmployeeController::class, 'update']);
         Route::delete('/{id}', [EmployeeController::class, 'destroy']);
+        Route::post('/delete-batch', [EmployeeController::class, 'destroyBatch']);
     });
 });

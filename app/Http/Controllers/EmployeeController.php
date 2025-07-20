@@ -8,7 +8,9 @@ use App\Http\Resources\EmployeeDetailResource;
 use App\Http\Requests\ListEmployeeRequest;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
+use App\Http\Requests\DestroyBatchEmployeeRequest;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -136,7 +138,6 @@ class EmployeeController extends Controller
         try {
             $employee = Employee::find($id);
             if (!$employee) {
-                DB::rollBack();
                 return ApiResponse::badRequest('Employee not found');
             }
             $user = $employee->user;
@@ -163,7 +164,6 @@ class EmployeeController extends Controller
         try {
             $employee = Employee::find($id);
             if (!$employee) {
-                DB::rollBack();
                 return ApiResponse::badRequest('Employee not found');
             }
 
@@ -179,6 +179,34 @@ class EmployeeController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::internalServerError($e, 'Failed to delete employee');
+        }
+    }
+
+    public function destroyBatch(DestroyBatchEmployeeRequest $request)
+    {
+        $ids = $request->input('ids');
+
+        DB::beginTransaction();
+        try {
+            $employees = Employee::whereIn('id', $ids)->get();
+
+            if ($employees->isEmpty()) {
+                return ApiResponse::badRequest('Employee not found');
+            }
+
+            $userIds = $employees->pluck('user_id')->toArray();
+
+            Employee::whereIn('id', $ids)->delete();
+
+            if (!empty($userIds)) {
+                User::whereIn('id', $userIds)->delete();
+            }
+
+            DB::commit();
+            return ApiResponse::success(null, 'Successfully delete batch employees');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::internalServerError($e, 'Failed to delete batch employees');
         }
     }
 
