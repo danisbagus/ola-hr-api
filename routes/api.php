@@ -25,6 +25,7 @@ Route::middleware([JwtMiddleware::class])->group(function () {
         Route::post('/', [DivisionController::class, 'store']);
         Route::put('/{id}', [DivisionController::class, 'update']);
         Route::delete('/{id}', [DivisionController::class, 'destroy']);
+        Route::post('/delete-batch', [DivisionController::class, 'destroyBatch']);
     });
 
     Route::prefix('/roles')->group(callback: function () {

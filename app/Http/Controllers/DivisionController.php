@@ -6,6 +6,7 @@ use App\Helpers\ApiResponse;
 use App\Http\Requests\ListDivisionRequest;
 use App\Http\Requests\StoreDivisionRequest;
 use App\Http\Requests\UpdateDivisionRequest;
+use App\Http\Requests\DestroyBatchDivisionRequest;
 use App\Http\Resources\DivisionResource;
 use App\Models\Division;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,8 +32,13 @@ class DivisionController extends Controller
                 $query->where('is_active', $filters['is_active']);
             }
 
-            $divisions = $query->orderBy($pagination['sort_by'], $pagination['sort_order'])
-                ->paginate($pagination['size'], ['*'], 'page', $pagination['page']);
+
+            // Order by updated_at DESC, fallback to created_at
+            $query->orderByRaw('COALESCE(updated_at, created_at) DESC');
+
+            // // Paginate
+            $divisions = $query->paginate($pagination['size'], ['*'], 'page', $pagination['page']);
+
 
             $responseData = [
                 'divisions' => DivisionResource::collection($divisions),
@@ -117,6 +123,25 @@ class DivisionController extends Controller
             return ApiResponse::success(null, 'Successfully delete division');
         } catch (\Exception $e) {
             return ApiResponse::internalServerError($e, 'Failed to delete division');
+        }
+    }
+
+    public function destroyBatch(DestroyBatchDivisionRequest $request)
+    {
+        $ids = $request->input('ids');
+
+        try {
+            $divisions = Division::whereIn('id', $ids)->get();
+
+            if ($divisions->isEmpty()) {
+                return ApiResponse::badRequest('Division not found');
+            }
+
+            Division::whereIn('id', $ids)->delete();
+
+            return ApiResponse::success(null, 'Successfully delete batch divisions');
+        } catch (\Exception $e) {
+            return ApiResponse::internalServerError($e, 'Failed to delete batch divisions');
         }
     }
 
