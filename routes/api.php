@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\DDLController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\MenuController;
 use App\Http\Controllers\RoleController;
 use App\Http\Middleware\JwtMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -48,5 +49,10 @@ Route::middleware([JwtMiddleware::class])->group(function () {
         Route::put('/{id}', [EmployeeController::class, 'update']);
         Route::delete('/{id}', [EmployeeController::class, 'destroy']);
         Route::post('/delete-batch', [EmployeeController::class, 'destroyBatch']);
+    });
+
+    // menu with prefix
+    Route::prefix('/menu')->group(callback: function () {
+        Route::get('/', [MenuController::class, 'index']);
     });
 });
