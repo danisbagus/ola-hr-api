@@ -6,10 +6,11 @@ use App\Helpers\ApiResponse;
 use App\Http\Requests\ListRoleRequest;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
+use App\Http\Requests\DestroyBatchRoleRequest;
 use App\Http\Resources\RoleResource;
 use App\Models\Role;
-use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
@@ -32,7 +33,7 @@ class RoleController extends Controller
                 $query->where('is_active', $filters['is_active']);
             }
 
-            $roles = $query->orderBy($pagination['sort_by'], $pagination['sort_order'])
+            $roles = $query->with('modules')->orderBy($pagination['sort_by'], $pagination['sort_order'])
                 ->paginate($pagination['size'], ['*'], 'page', $pagination['page']);
 
             $responseData = [
@@ -56,12 +57,22 @@ class RoleController extends Controller
      */
     public function store(StoreRoleRequest $request)
     {
+        DB::beginTransaction();
         try {
             $role = $request->toDto()->toModel();
             $role->save();
 
+            // attach module_ids to pivot table
+            $moduleIDs = $request->input('module_ids', []);
+            if (!empty($moduleIDs)) {
+                $role->modules()->sync($moduleIDs);
+            }
+
+            DB::commit();
+
             return ApiResponse::success(null, 'Successfully create role',  Response::HTTP_CREATED,);
         } catch (\Exception $e) {
+            DB::rollBack();
             return ApiResponse::internalServerError($e, 'Failed to create role');
         }
     }
@@ -72,7 +83,7 @@ class RoleController extends Controller
     public function show(string $id)
     {
         try {
-            $role = Role::find($id);
+            $role = Role::with('modules')->find($id);
             if (!$role) {
                 return ApiResponse::badRequest('Role not found');
             }
@@ -88,6 +99,7 @@ class RoleController extends Controller
      */
     public function update(UpdateRoleRequest $request, string $id)
     {
+        DB::beginTransaction();
         try {
             $role = Role::find($id);
             if (!$role) {
@@ -96,8 +108,17 @@ class RoleController extends Controller
 
             $role->update($this->toUpdatepayload($request));
 
+            // sync modules
+            $moduleIDs = $request->input('module_ids', []);
+            if (!empty($moduleIDs)) {
+                $role->modules()->sync($moduleIDs);
+            }
+
+            DB::commit();
+
             return ApiResponse::success(null, 'Successfully update role');
         } catch (\Exception $e) {
+            DB::rollBack();
             return ApiResponse::internalServerError($e, 'Failed to update role');
         }
     }
@@ -118,6 +139,25 @@ class RoleController extends Controller
             return ApiResponse::success(null, 'Successfully delete role');
         } catch (\Exception $e) {
             return ApiResponse::internalServerError($e, 'Failed to delete role');
+        }
+    }
+
+    public function destroyBatch(DestroyBatchRoleRequest $request)
+    {
+        $ids = $request->input('ids');
+
+        try {
+            $roles = Role::whereIn('id', $ids)->get();
+
+            if ($roles->isEmpty()) {
+                return ApiResponse::badRequest('Role not found');
+            }
+
+            Role::whereIn('id', $ids)->delete();
+
+            return ApiResponse::success(null, 'Successfully delete batch roles');
+        } catch (\Exception $e) {
+            return ApiResponse::internalServerError($e, 'Failed to delete batch roles');
         }
     }
 

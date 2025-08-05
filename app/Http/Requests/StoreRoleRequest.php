@@ -24,6 +24,8 @@ class StoreRoleRequest extends BaseFormRequest
         return [
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
+            'module_ids' => 'required|array|min:1',
+            'module_ids.*' => 'exists:modules,id',
         ];
     }
 

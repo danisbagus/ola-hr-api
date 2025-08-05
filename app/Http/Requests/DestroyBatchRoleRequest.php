@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-class UpdateRoleRequest extends BaseFormRequest
+class DestroyBatchRoleRequest extends BaseFormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -20,10 +20,7 @@ class UpdateRoleRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'is_active' => 'required|boolean',
-            'module_ids' => 'required|array|min:1',
-            'module_ids.*' => 'exists:modules,id',
+            'ids' => ['required', 'array', 'min:1']
         ];
     }
 }
